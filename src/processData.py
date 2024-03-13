@@ -13,6 +13,8 @@ def parseData(data, args):
     greatestElementX = 0
     greatestElementY = 0
 
+    nodesDict = {}
+
     for element in data["elements"]:
         if element["type"] == "node":
             element["lat"] = int(str(element["lat"]).replace(".", ""))
@@ -27,61 +29,44 @@ def parseData(data, args):
             element["lat"] *= 10 ** digit_diff_x
             element["lon"] *= 10 ** digit_diff_y
 
+            nodesDict[element["id"]] = [element["lat"], element["lon"]]
+
     lowestElementX = greatestElementX
     lowestElementY = greatestElementY
-    for element in data["elements"]:
-        if element["type"] == "node":
-            if element["lat"] < lowestElementX:
-                lowestElementX = element["lat"]
-            if element["lon"] < lowestElementY:
-                lowestElementY = element["lon"]
+    for nodeId in nodesDict:
+        if nodesDict[nodeId][0] < lowestElementX:
+            lowestElementX = nodesDict[nodeId][0]
+        if nodesDict[nodeId][1] < lowestElementY:
+            lowestElementY = nodesDict[nodeId][1]
 
-    nodesDict = {}
     for element in data["elements"]:
         if element["type"] == "node":
             element["lat"] -= lowestElementX
             element["lon"] -= lowestElementY
-            nodesDict[element["id"]] = [element["lat"], element["lon"]]
 
-    orig_posDeterminationCoordX = 0
-    orig_posDeterminationCoordY = 0
-    map_posDeterminationCoordX = 0
-    map_posDeterminationCoordY = 0
     maxBuilding = (0, 0)
-    minBuilding = (greatestElementX, greatestElementY)
+    minBuilding = (float('inf'), float('inf'))
     nodeIndexList = []
+
     for i, element in enumerate(data["elements"]):
         if element["type"] == "way":
             for j, node in enumerate(element["nodes"]):
                 element["nodes"][j] = nodesDict[node]
 
             if "tags" in element and "building" in element["tags"]:
-                if orig_posDeterminationCoordX == 0:
-                    orig_posDeterminationCoordX = element["nodes"][0][0]
-                    orig_posDeterminationCoordY = element["nodes"][0][1]
-                    map_posDeterminationCoordX = round(
-                        element["nodes"][0][0] / resDownScaler
-                    )
-                    map_posDeterminationCoordY = round(
-                        element["nodes"][0][1] / resDownScaler
-                    )
-
                 for coordinate in element["nodes"]:
                     cordX = round(coordinate[0] / resDownScaler)
                     cordY = round(coordinate[1] / resDownScaler)
 
-                    if cordX > maxBuilding[0]:
-                        maxBuilding = (cordX, maxBuilding[1])
-                    elif cordX < minBuilding[0]:
-                        minBuilding = (cordX, minBuilding[1])
-
-                    if cordY > maxBuilding[1]:
-                        maxBuilding = (maxBuilding[0], cordY)
-                    elif cordY < minBuilding[1]:
-                        minBuilding = (minBuilding[0], cordY)
+                    maxBuilding = (max(cordX, maxBuilding[0]), max(cordY, maxBuilding[1]))
+                    minBuilding = (min(cordX, minBuilding[0]), min(cordY, minBuilding[1]))
 
         elif element["type"] == "node":
             nodeIndexList.append(i)
+
+    (orig_posDeterminationCoordX, orig_posDeterminationCoordY) = (minBuilding[0], minBuilding[1])
+    (map_posDeterminationCoordX, map_posDeterminationCoordY) = (round(orig_posDeterminationCoordX / resDownScaler), round(orig_posDeterminationCoordY / resDownScaler))
+
 
     for i in reversed(nodeIndexList):
         del data["elements"][i]
