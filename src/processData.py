@@ -5,37 +5,27 @@ import numpy as np
 from .bresenham import bresenham
 from .floodFill import floodFill
 
-
-def processData(data, args):
+def parseData(data, args):
     print("Parsing data...")
     resDownScaler = 100
     processingStartTime = time()
 
     greatestElementX = 0
     greatestElementY = 0
+
     for element in data["elements"]:
         if element["type"] == "node":
             element["lat"] = int(str(element["lat"]).replace(".", ""))
             element["lon"] = int(str(element["lon"]).replace(".", ""))
 
-            if element["lat"] > greatestElementX:
-                greatestElementX = element["lat"]
-            if element["lon"] > greatestElementY:
-                greatestElementY = element["lon"]
+            greatestElementX = max(greatestElementX, element["lat"])
+            greatestElementY = max(greatestElementY, element["lon"])
 
-    for element in data["elements"]:
-        if element["type"] == "node":
-            if len(str(element["lat"])) != len(str(greatestElementX)):
-                for i in range(
-                    0, len(str(greatestElementX)) - len(str(element["lat"]))
-                ):
-                    element["lat"] *= 10
+            digit_diff_x = len(str(greatestElementX)) - len(str(element["lat"]))
+            digit_diff_y = len(str(greatestElementY)) - len(str(element["lon"]))
 
-            if len(str(element["lon"])) != len(str(greatestElementY)):
-                for i in range(
-                    0, len(str(greatestElementY)) - len(str(element["lon"]))
-                ):
-                    element["lon"] *= 10
+            element["lat"] *= 10 ** digit_diff_x
+            element["lon"] *= 10 ** digit_diff_y
 
     lowestElementX = greatestElementX
     lowestElementY = greatestElementY
@@ -159,6 +149,10 @@ def processData(data, args):
     img.fill(0)
     imgLanduse = img.copy()
 
+    return processData(minMaxDistX, minMaxDistY, data, img, imgLanduse, processingStartTime, args.debug)
+
+
+def processData(minMaxDistX, minMaxDistY, data, img, imgLanduse, processingStartTime, debug):
     print("Processing data...")
 
     ElementIncr = 0
@@ -650,6 +644,6 @@ def processData(data, args):
         f"Processing finished in {(time() - processingStartTime):.2f} seconds"
         + f"({((time() - processingStartTime) / 60):.2f} minutes)"
     )
-    if args.debug:
+    if debug:
         imwrite("arnis-debug-map.png", img)
     return np.flip(img, axis=1)

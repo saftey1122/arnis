@@ -15,7 +15,7 @@ from math import floor
 import numpy as np
 
 from .getData import getData
-from .processData import processData
+from .processData import parseData
 
 parser = argparse.ArgumentParser(
     description="Arnis - Generate cities from real life in Minecraft using Python"
@@ -123,7 +123,7 @@ def run():
         os._exit(1)
 
     rawdata = getData(args.city, args.state, args.country, args.bbox, args.file, args.debug)
-    imgarray = processData(rawdata, args)
+    imgarray = parseData(rawdata, args)
 
     print("Generating minecraft world...")
 
